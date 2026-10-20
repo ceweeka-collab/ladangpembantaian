@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Truf Online - RAJA TENGKORAK</title>
+    
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', -apple-system, sans-serif; }
+        body { background: #120e0c; color: #e2d7cd; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        
+        .app-container { width: 100%; max-width: 410px; height: 100vh; max-height: 740px; background: #1a1412; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.9); }
+        @media (min-width: 450px) {
+            .app-container { border-radius: 20px; border: 1px solid #2e231f; height: 740px; }
+        }
+        
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1412; display: flex; flex-direction: column; padding: 12px; z-index: 10; overflow-y: auto; }
+        .hidden { display: none !important; }
+
+        h2 { color: #d97742; text-align: center; margin-bottom: 12px; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; color: #a8988a; margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #3d2f28; background: #110d0b; color: #fff; font-size: 14px; }
+        .btn { width: 100%; padding: 11px; background: #d97742; color: #fff; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 6px; text-align: center; }
+        .btn:disabled { background: #42322a; color: #736157; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid #d97742; color: #d97742; }
+        .btn-success { background: #2e7d32; color: #fff; }
+
+        /* DAFTAR ROOM / LOBBY STYLE */
+        .room-list-container { background: #221a17; border: 1px solid #3a2d27; border-radius: 12px; padding: 8px; margin-top: 8px; max-height: 180px; overflow-y: auto; }
+        .room-item { background: #14100e; border: 1px solid #2e231f; padding: 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .room-info { font-size: 11px; }
+        .room-title { color: #d97742; font-weight: 800; font-size: 13px; }
+        .btn-sm { width: auto; padding: 6px 12px; font-size: 11px; margin-top: 0; border-radius: 8px; }
+
+        /* KOTAK SEJARAH */
+        .history-box { background: #221a17; border: 1px solid #3a2d27; border-radius: 12px; padding: 10px; margin-top: 10px; font-size: 11px; }
+        .history-title { color: #d97742; font-weight: 800; font-size: 12px; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #2e231f; padding-bottom: 4px; }
+        .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: left; }
+        .history-card { background: #14100e; padding: 6px; border-radius: 6px; border: 1px solid #281d18; }
+        .history-card span { color: #d97742; font-weight: bold; }
+
+        .top-bar { display: flex; justify-content: space-between; padding: 8px 10px; background: #221a17; font-size: 10px; align-items: center; border-bottom: 1px solid #2e231f; }
+        .badge { background: #2e231f; padding: 4px 8px; border-radius: 8px; font-weight: 800; }
+        .btn-mini { background: #d97742; color: #fff; border: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 800; }
+
+        .opponents-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; }
+        .p-box { background: #221a17; padding: 8px 4px; border-radius: 12px; text-align: center; border: 1px solid #3a2d27; font-size: 10px; }
+        .p-name { font-size: 11px; font-weight: 800; color: #ffffff; display: block; margin-bottom: 2px; }
+        .avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: #d97742; color: #fff; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; }
+
+        .table-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; width: 100%; min-height: 160px; }
+        .status-msg { background: rgba(0,0,0,0.75); padding: 5px 12px; border-radius: 20px; font-size: 11px; color: #d1c2b4; border: 1px solid #3d2f28; margin-bottom: 6px; text-align: center; z-index: 5; font-weight: 600; }
+        
+        .table-board { width: 220px; height: 180px; position: relative; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
+        
+        .table-slot { position: absolute; width: 68px; height: 96px; border: 1px dashed rgba(255,255,255,0.08); border-radius: 10px; display: flex; justify-content: center; align-items: center; z-index: 2; }
+        #slot-Pemain2 { top: 40px; left: -10px; }
+        #slot-Pemain3 { top: -10px; left: 76px; }
+        #slot-Pemain4 { top: 40px; right: -10px; }
+        #slot-You { bottom: -10px; left: 76px; }
+
+        /* KARTU MANIS & ELEGAN SESUAI GAMBAR CONTOH */
+        .card { 
+            width: 68px; 
+            height: 96px; 
+            background: #f7f3e9 !important; 
+            color: #211c19; 
+            border-radius: 10px; 
+            padding: 5px 6px; 
+            font-weight: 800; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+            border: 1px solid #e0d8c8; 
+            position: absolute; 
+            user-select: none; 
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s; 
+        }
+        .card.red { color: #c0392b; }
+        
+        .card-corner { font-size: 13px; line-height: 1; text-align: left; font-weight: 800; }
+        .card-corner span { font-size: 11px; display: block; margin-top: -1px; }
+        .card-center { font-size: 32px; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); }
+        .card-corner-bottom { font-size: 13px; line-height: 1; text-align: right; transform: rotate(180deg); font-weight: 800; }
+        .card-corner-bottom span { font-size: 11px; display: block; margin-top: -1px; }
+        
+        /* DESAIN KARTU OTOMATIS BERDIRI (RAISED/HIGHLIGHTED) */
+        .card.raised { 
+            transform: translateY(-24px) !important; 
+            border: 2px solid #d97742 !important; 
+            box-shadow: 0 8px 18px rgba(217,119,66,0.6) !important; 
+            z-index: 50 !important; 
+        }
+        .card.selected { 
+            transform: translateY(-28px) !important; 
+            border: 2px solid #2e7d32 !important; 
+            box-shadow: 0 8px 20px rgba(46,125,50,0.8) !important; 
+            z-index: 60 !important; 
+        }
+        .card.disabled { 
+            opacity: 0.3; 
+            filter: grayscale(0.8); 
+            cursor: not-allowed; 
+            transform: translateY(0px) !important;
+        }
+
+        .card.back { 
+            background: linear-gradient(135deg, #2c3e50, #1a252f) !important; 
+            border: 2px solid #fff; 
+            color: transparent !important; 
+        }
+        .card.back::after { 
+            content: '♠'; 
+            font-size: 30px; 
+            color: rgba(255,255,255,0.15); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100%; 
+            position: absolute; 
+            top: 0; left: 0; width: 100%; 
+        }
+
+        .bottom-area { background: #221a17; padding: 10px 10px 35px 10px; border-top: 1px solid #2e231f; flex-shrink: 0; position: relative; z-index: 30; }
+        .my-info { display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin-bottom: 6px; background: #171210; padding: 6px 10px; border-radius: 20px; border: 1px solid #2e231f; }
+        .hand-container { display: flex; justify-content: center; align-items: center; padding: 10px 0 0 0; width: 100%; position: relative; height: 120px; }
+        .hand-container .card { position: absolute; }
+
+        .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 15px; }
+        .modal-content { background: #221a17; border: 1px solid #3a2d27; border-radius: 16px; padding: 16px; width: 100%; max-width: 360px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.9); }
+
+        .score-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+        .score-table th { background: #2e231f; color: #d97742; padding: 6px 4px; text-align: center; border: 1px solid #3a2d27; }
+        .score-table td { padding: 6px 4px; text-align: center; border: 1px solid #281d18; background: #14100e; }
+        .score-table tr.winner-row td { background: rgba(46, 125, 50, 0.2); color: #81c784; font-weight: bold; }
+
+        .bidding-container { display: flex; justify-content: center; align-items: center; padding: 10px 0; width: 100%; position: relative; height: 110px; margin-bottom: 8px; }
+
+        .modal-alert { background: linear-gradient(135deg, #b71c1c, #7f0000) !important; border: 2px solid #ff5252 !important; }
+        .modal-alert h3 { color: #ffffff !important; font-size: 18px; margin-bottom: 8px; font-weight: 900; }
+        .modal-alert p { color: #ffebee !important; font-size: 13px; font-weight: bold; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="app-root">
+    <div id="auth-screen" class="screen">
+        <h2>RAJA TENGKORAK</h2>
+        <div class="form-group">
+            <label>Nama Pemain</label>
+            <input type="text" id="username" class="form-control" value="RAJA TENGKORAK">
+        </div>
+        <button class="btn" onclick="submitAuth()">Masuk Permainan</button>
+    </div>
+
+    <!-- LOBBY + DAFTAR ROOM OTOMATIS -->
+    <div id="lobby-screen" class="screen hidden">
+        <h2>LOBBY MEJA</h2>
+        
+        <div class="form-group" style="background:#221a17; padding:8px; border-radius:10px; border:1px solid #3a2d27;">
+            <label style="color:#d97742; font-weight:bold; font-size:11px;">🎯 Pilih Jumlah Ronde Main:</label>
+            <select id="round-select" class="form-control" style="padding:6px; margin-top:4px;">
+                <option value="3">3 Ronde (Cepat)</option>
+                <option value="6" selected>6 Ronde (Standard)</option>
+                <option value="9">9 Ronde (Penuh/Turnamen)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-outline" onclick="createOnlineRoomUI()">+ Buat Room Baru</button>
+        <button class="btn" style="background:#2e231f; margin-top:4px;" onclick="startGame()">Mulai Latihan vs Bot</button>
+        
+        <hr style="border:0; border-top:1px solid #2e231f; margin:10px 0;">
+        <h3 style="color:#a8988a; font-size:12px; text-align:center;">🌐 DAFTAR ROOM AKTIF (LIVE)</h3>
+        
+        <div class="room-list-container" id="room-list-display">
+            <div style="text-align:center; font-size:11px; color:#888; padding:10px;">Mencari room aktif...</div>
+        </div>
+
+        <div class="history-box">
+            <div class="history-title">📊 SEJARAH PERTANDINGAN</div>
+            <div class="history-grid">
+                <div class="history-card">👑 Top Rank: <br><span id="hist-top-rank">-</span></div>
+                <div class="history-card">💀 Sering Kalah: <br><span id="hist-most-loss">-</span></div>
+                <div class="history-card">🎮 Total Main: <br><span id="hist-total-games">0 Game</span></div>
+                <div class="history-card">⭐ Poin Tertinggi: <br><span id="hist-high-score">0 Poin</span></div>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+            <input type="text" id="room-code-input" class="form-control" placeholder="Kode Manual (Opsional)">
+            <button class="btn btn-sm" style="background:#2e7d32; width:100%; margin-top:4px;" onclick="joinOnlineRoomUI()">Gabung Manual</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden" style="padding:0; justify-content:space-between;">
+        <div class="top-bar">
+            <span class="badge" id="round-text">Ronde 1/6</span>
+            <span class="badge" id="mode-text" style="color:#d97742;">Mode: -</span>
+            <span class="badge" id="trump-text">Truf: -</span>
+            <button class="btn-mini" onclick="openScoreModal()">Skor</button>
+            <button class="btn btn-danger" style="width:auto; padding:2px 6px; font-size:9px; margin:0; border-radius:6px;" onclick="endGame()">Keluar</button>
+        </div>
+
+        <div class="opponents-grid">
+            <div class="p-box">
+                <div class="avatar-sm">P2</div>
+                <span class="p-name" id="name-b">Pemain 2</span>
+                T:<span id="t-b">0</span> W:<span id="w-b">0</span><br>
+                <span style="color:#d97742; font-weight:bold;">Skor: <span id="s-b">0</span></span>
+            </div>
+            <div class="p-box">
+                <div class="avatar-sm">P3</div>
+                <span class="p-name" id="name-v">Pemain 3</span>
+                T:<span id="t-v">0</span> W:<span id="w-v">0</span><br>
+                <span style="color:#d97742; font-weight:bold;">Skor: <span id="s-v">0</span></span>
+            </div>
+            <div class="p-box">
+                <div class="avatar-sm">P4</div>
+                <span class="p-name" id="name-h">Pemain 4</span>
+                T:<span id="t-h">0</span> W:<span id="w-h">0</span><br>
+                <span style="color:#d97742; font-weight:bold;">Skor: <span id="s-h">0</span></span>
+            </div>
+        </div>
+
+        <div class="table-area">
+            <div class="status-msg" id="status-msg">Menunggu pemain bergabung...</div>
+            
+            <div class="table-board">
+                <div class="table-slot" id="slot-Pemain2"></div>
+                <div class="table-slot" id="slot-Pemain3"></div>
+                <div class="table-slot" id="slot-Pemain4"></div>
+                <div class="table-slot" id="slot-You"></div>
+            </div>
+        </div>
+
+        <div class="bottom-area">
+            <div class="my-info">
+                <b id="my-name-game" style="color:#d97742;">RAJA TENGKORAK (You)</b>
+                <div>
+                    Tgt: <b id="my-target" style="color:#d97742;">0</b> | 
+                    Win: <b id="my-win" style="color:#81c784;">0</b> | 
+                    Skor: <b id="my-score" style="color:#d97742;">0</b>
+                </div>
+            </div>
+
+            <div style="text-align:center; min-height:30px; margin-bottom:2px;">
+                <button id="btn-confirm-play" class="btn hidden" style="width:auto; padding:5px 16px; margin:0 auto; font-size:11px;" onclick="confirmPlayCard()">Konfirmasi Buang Kartu</button>
+            </div>
+
+            <div class="hand-container" id="my-hand"></div>
+        </div>
+    </div>
+
+    <!-- BIDDING MODAL -->
+    <div id="bidding-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="color:#d97742; font-size:16px; margin-bottom:4px;">PILIH TARGET BID</h3>
+            <p style="font-size:11px; color:#aaa; margin-bottom:6px;">Pilih 1 atau 2 kartu dari tangan Anda:</p>
+            <div class="bidding-container" id="bidding-cards-container"></div>
+            <div style="background:#14100e; padding:6px; border-radius:8px; font-size:11px; margin-bottom:4px; width:100%; border:1px solid #2e231f;">
+                Hasil Target: <b id="bid-calc-result" style="color:#d97742;">-</b>
+            </div>
+            <div id="bid-warning-msg" style="color:#ff5252; font-size:10px; font-weight:bold; margin-bottom:8px; min-height:14px;"></div>
+            <button id="btn-confirm-target" class="btn" disabled onclick="confirmBiddingTarget()">Konfirmasi Target</button>
+        </div>
+    </div>
+
+    <!-- SKOR MODAL -->
+    <div id="score-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="color:#d97742; margin-bottom:10px;">REKAP POIN</h3>
+            <div id="score-list-content" style="width:100%; font-size:12px; text-align:left; margin-bottom:12px;"></div>
+            <button class="btn" onclick="closeScoreModal()">Tutup</button>
+        </div>
+    </div>
+
+    <!-- REKAP RONDE -->
+    <div id="round-end-modal" class="modal hidden">
+        <div class="modal-content" id="round-modal-content-box">
+            <h3 id="round-end-title" style="color:#d97742; margin-bottom:8px;">REKAP RONDE</h3>
+            <div id="round-end-content" style="width:100%; font-size:12px; margin-bottom:12px;"></div>
+            <button class="btn" id="btn-proceed-round" onclick="proceedNextRoundOrFinish()">Lanjut</button>
+        </div>
+    </div>
+
+    <!-- MODAL PERINGATAN KEMBANG -->
+    <div id="alert-modal" class="modal hidden">
+        <div class="modal-content modal-alert">
+            <h3>JANGAN PURA2 NDAK PUNYA!!</h3>
+            <p id="alert-modal-msg">Wajib membuang kembang ini!</p>
+            <button class="btn" style="background:#ffffff; color:#b71c1c; font-weight:800;" onclick="closeAlertModal()">SAYA MENGERTI</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURASI FIREBASE ANDA ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZsrSCwEkW_vaYMHSQJHYvAHE9jd6NWnE",
+      authDomain: "raja-tengkorak.firebaseapp.com",
+      databaseURL: "https://raja-tengkorak-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "raja-tengkorak",
+      storageBucket: "raja-tengkorak.firebasestorage.app",
+      messagingSenderId: "617878909655",
+      appId: "1:617878909655:web:aa3d050fbb7636018c3692",
+      measurementId: "G-Q1GQZ9D5WK"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let isSpectator = false;
+    let myPlayerId = 'p_' + Math.random().toString(36).substr(2, 9);
+    let currentRoomCode = null;
+
+    // AMBIL NAMA TERSIMPAN JIKA ADA (CEK REFRESH)
+    window.onload = function() {
+        let savedName = localStorage.getItem('rt_username');
+        if (savedName) {
+            document.getElementById('username').value = savedName;
+        }
+    };
+
+    function submitAuth() {
+        let myName = document.getElementById('username').value.trim() || 'RAJA TENGKORAK';
+        localStorage.setItem('rt_username', myName);
+
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        loadGameHistoryUI();
+        listenToActiveRoomsList();
+    }
+
+    function listenToActiveRoomsList() {
+        const roomContainer = document.getElementById('room-list-display');
+        db.ref('rooms').on('value', (snapshot) => {
+            roomContainer.innerHTML = '';
+            let roomsData = snapshot.val();
+            if (!roomsData) {
+                roomContainer.innerHTML = `<div style="text-align:center; font-size:11px; color:#888; padding:10px;">Belum ada room aktif. Buat room baru!</div>`;
+                return;
+            }
+            let hasRoom = false;
+            Object.keys(roomsData).forEach(code => {
+                let room = roomsData[code];
+                if (room && room.players) {
+                    hasRoom = true;
+                    let pCount = Object.values(room.players).filter(p => p !== null).length;
+                    let roomDiv = document.createElement('div');
+                    roomDiv.className = 'room-item';
+                    let isFull = pCount >= 4;
+                    let actionBtnHTML = isFull 
+                        ? `<button class="btn btn-sm" style="background:#0288d1;" onclick="joinSpecificRoom('${code}', true)">👁️ Tonton</button>`
+                        : `<button class="btn btn-sm btn-success" onclick="joinSpecificRoom('${code}', false)">🎮 Gabung</button>`;
+
+                    roomDiv.innerHTML = `
+                        <div class="room-info">
+                            <div class="room-title">Meja ${room.host} (#${code})</div>
+                            <div style="color:#aaa; font-size:10px;">Pemain: ${pCount}/4 | Ronde: ${room.maxRounds || 6}</div>
+                        </div>
+                        ${actionBtnHTML}
+                    `;
+                    roomContainer.appendChild(roomDiv);
+                }
+            });
+            if (!hasRoom) {
+                roomContainer.innerHTML = `<div style="text-align:center; font-size:11px; color:#888; padding:10px;">Belum ada room aktif. Buat room baru!</div>`;
+            }
+        });
+    }
+
+    function joinSpecificRoom(code, forceSpectator) {
+        let myName = document.getElementById('username').value.trim() || 'Pemain';
+        currentRoomCode = code;
+        isSpectator = forceSpectator;
+
+        db.ref('rooms/' + code).once('value', (snapshot) => {
+            let roomData = snapshot.val();
+            if (!roomData) return;
+            maxRounds = parseInt(roomData.maxRounds || 6);
+
+            if (!isSpectator) {
+                let roomPlayers = roomData.players || {};
+                let slotToOccupy = null;
+                if (!roomPlayers.p2) slotToOccupy = 'p2';
+                else if (!roomPlayers.p3) slotToOccupy = 'p3';
+                else if (!roomPlayers.p4) slotToOccupy = 'p4';
+
+                if (slotToOccupy) {
+                    db.ref(`rooms/${code}/players/${slotToOccupy}`).set({ id: myPlayerId, name: myName });
+                } else {
+                    isSpectator = true;
+                }
+            }
+
+            listenToRoom(code);
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('status-msg').innerText = isSpectator ? "Mode Penonton Active..." : "Berhasil Gabung. Menunggu Pemain...";
+        });
+    }
+
+    function createOnlineRoomUI() {
+        let code = Math.floor(1000 + Math.random() * 9000).toString();
+        let selectedRounds = document.getElementById('round-select').value;
+        let myName = document.getElementById('username').value.trim() || 'RAJA TENGKORAK';
+        currentRoomCode = code;
+
+        db.ref('rooms/' + code).set({
+            host: myName,
+            maxRounds: selectedRounds,
+            status: 'waiting',
+            players: { p1: { id: myPlayerId, name: myName }, p2: null, p3: null, p4: null }
+        });
+
+        listenToRoom(code);
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('status-msg').innerText = "Menunggu pemain bergabung...";
+    }
+
+    function joinOnlineRoomUI() {
+        let inputCode = document.getElementById('room-code-input').value.trim();
+        if (inputCode) joinSpecificRoom(inputCode, false);
+    }
+
+    // LISTEN ROOM SINKRON KARD ONLINE DARI HOST
+    function listenToRoom(code) {
+        db.ref('rooms/' + code).on('value', (snapshot) => {
+            let data = snapshot.val();
+            if (!data) return;
+
+            if (data.players) {
+                let pList = data.players;
+                let playerArray = [pList.p1, pList.p2, pList.p3, pList.p4];
+                let mySlotIndex = playerArray.findIndex(p => p && p.id === myPlayerId);
+                
+                if (mySlotIndex !== -1) {
+                    let reordered = [];
+                    for (let i = 0; i < 4; i++) {
+                        reordered.push(playerArray[(mySlotIndex + i) % 4]);
+                    }
+                    players = reordered.map((p, idx) => p ? p.name : `Pemain ${idx + 1}`);
+                }
+
+                document.getElementById('my-name-game').innerText = `${players[0]} (You)`;
+                document.getElementById('name-b').innerText = players[1];
+                document.getElementById('name-v').innerText = players[2];
+                document.getElementById('name-h').innerText = players[3];
+
+                // Jika Host (p1) & semua pemain hadir, host bagikan kartu secara sinkron
+                if (pList.p1 && pList.p1.id === myPlayerId && pList.p2 && pList.p3 && pList.p4 && data.status === 'waiting') {
+                    hostDealCardsOnline(code);
+                }
+            }
+
+            // Menerima kartu dari database
+            if (data.status === 'playing' && data.hands && data.hands[myPlayerId]) {
+                playerHand = data.hands[myPlayerId];
+                sortCards(playerHand);
+                
+                if (document.getElementById('bidding-modal').classList.contains('hidden') && playerHand.length > 0 && !isSpectator) {
+                    document.getElementById('round-text').innerText = `Ronde ${currentRound}/${maxRounds}`;
+                    clearTableBoard();
+                    openBiddingModal();
+                }
+            }
+        });
+    }
+
+    function hostDealCardsOnline(code) {
+        let fullDeck = [];
+        const suits = ['♦', '♣', '♥', '♠'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        suits.forEach(suit => values.forEach(val => fullDeck.push({ suit, val, red: ['♥', '♦'].includes(suit) })));
+        fullDeck.sort(() => Math.random() - 0.5);
+
+        db.ref('rooms/' + code).once('value', (snapshot) => {
+            let roomData = snapshot.val();
+            let pList = roomData.players;
+            let pIds = [pList.p1.id, pList.p2.id, pList.p3.id, pList.p4.id];
+
+            let handsData = {};
+            pIds.forEach((id, idx) => {
+                handsData[id] = fullDeck.slice(idx * 13, (idx + 1) * 13);
+            });
+
+            db.ref('rooms/' + code).update({
+                status: 'playing',
+                hands: handsData
+            });
+        });
+    }
+
+    let currentRound = 1;
+    let maxRounds = 6;
+    let playerHand = [];
+    let selectedBidCards = [];
+    let selectedPlayCard = null;
+    let activeTrump = null; 
+    let gameMode = 'MAIN BAWAH';
+
+    let players = ['You', 'Pemain 2', 'Pemain 3', 'Pemain 4'];
+    let playerHands = { 'You': [], 'Pemain 2': [], 'Pemain 3': [], 'Pemain 4': [] };
+    let playerTargets = { 'You': 0, 'Pemain 2': 0, 'Pemain 3': 0, 'Pemain 4': 0 };
+    let playerBidDetails = { 'You': null, 'Pemain 2': null, 'Pemain 3': null, 'Pemain 4': null };
+    let playerWins = { 'You': 0, 'Pemain 2': 0, 'Pemain 3': 0, 'Pemain 4': 0 };
+    let playerTotalScores = { 'You': 0, 'Pemain 2': 0, 'Pemain 3': 0, 'Pemain 4': 0 };
+
+    let currentTurnIndex = 0;
+    let currentTrickCards = [];
+
+    const suitWeight = { '♦': 1, '♣': 2, '♥': 3, '♠': 4 };
+    const cardRank = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+
+    function sortCards(cards) {
+        return cards.sort((a, b) => {
+            if (suitWeight[a.suit] !== suitWeight[b.suit]) return suitWeight[a.suit] - suitWeight[b.suit];
+            return cardRank[a.val] - cardRank[b.val];
+        });
+    }
+
+    function loadGameHistoryUI() {
+        let history = JSON.parse(localStorage.getItem('rt_game_history')) || { totalGames: 0, highScore: 0, winners: {}, losers: {} };
+        document.getElementById('hist-total-games').innerText = `${history.totalGames} Game`;
+        document.getElementById('hist-high-score').innerText = `${history.highScore} Poin`;
+        let topWinner = Object.keys(history.winners).reduce((a, b) => history.winners[a] > history.winners[b] ? a : b, '-');
+        let mostLoss = Object.keys(history.losers).reduce((a, b) => history.losers[a] > history.losers[b] ? a : b, '-');
+        document.getElementById('hist-top-rank').innerText = topWinner !== '-' ? `${topWinner} (${history.winners[topWinner]}x)` : '-';
+        document.getElementById('hist-most-loss').innerText = mostLoss !== '-' ? `${mostLoss} (${history.losers[mostLoss]}x)` : '-';
+    }
+
+    function startGame() {
+        maxRounds = parseInt(document.getElementById('round-select').value);
+        currentRound = 1;
+        players.forEach(p => playerTotalScores[p] = 0);
+        updateScoreDisplays();
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        startNewRound();
+    }
+
+    function startNewRound() {
+        document.getElementById('round-text').innerText = `Ronde ${currentRound}/${maxRounds}`;
+        clearTableBoard();
+        players.forEach(p => playerWins[p] = 0);
+        updateWinCounters();
+        dealCardsToAll();
+        openBiddingModal();
+    }
+
+    function clearTableBoard() {
+        players.forEach(p => {
+            const slot = document.getElementById(`slot-${p}`);
+            if (slot) slot.innerHTML = '';
+        });
+        currentTrickCards = [];
+    }
+
+    function updateWinCounters() {
+        document.getElementById('my-win').innerText = playerWins['You'];
+        document.getElementById('w-b').innerText = playerWins[players[1]] || 0;
+        document.getElementById('w-v').innerText = playerWins[players[2]] || 0;
+        document.getElementById('w-h').innerText = playerWins[players[3]] || 0;
+    }
+
+    function updateScoreDisplays() {
+        document.getElementById('my-score').innerText = playerTotalScores['You'];
+        document.getElementById('s-b').innerText = playerTotalScores[players[1]] || 0;
+        document.getElementById('s-v').innerText = playerTotalScores[players[2]] || 0;
+        document.getElementById('s-h').innerText = playerTotalScores[players[3]] || 0;
+    }
+
+    function dealCardsToAll() {
+        let fullDeck = [];
+        const suits = ['♦', '♣', '♥', '♠'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        suits.forEach(suit => values.forEach(val => fullDeck.push({ suit, val, red: ['♥', '♦'].includes(suit) })));
+        fullDeck.sort(() => Math.random() - 0.5);
+
+        players.forEach((p, idx) => {
+            playerHands[p] = fullDeck.slice(idx * 13, (idx + 1) * 13);
+            sortCards(playerHands[p]);
+        });
+        playerHand = playerHands['You'];
+        renderHand();
+    }
+
+    /* RENDER KARTU DENGAN FITUR OTOMATIS BERDIRI (AUTO-RAISE) */
+    function renderHand() {
+        const container = document.getElementById('my-hand');
+        container.innerHTML = '';
+
+        if (isSpectator) {
+            container.innerHTML = `<div style="color:#d97742; font-weight:bold; margin:auto; font-size:12px;">👀 Mode Penonton Active</div>`;
+            return;
+        }
+
+        let leadSuit = currentTrickCards.length > 0 ? currentTrickCards[0].card.suit : null;
+        let hasLeadSuit = leadSuit ? playerHand.some(c => c.suit === leadSuit) : false;
+        let totalCards = playerHand.length;
+
+        let totalWidthSpan = Math.min(270, totalCards * 22); 
+        let startLeftOffset = (280 - totalWidthSpan) / 2;
+        let offsetStep = totalCards > 1 ? totalWidthSpan / (totalCards - 1) : 0;
+
+        playerHand.forEach((card, index) => {
+            const cardEl = document.createElement('div');
+            let isDisabled = false;
+            let isRaised = false;
+
+            if (leadSuit && hasLeadSuit && card.suit === leadSuit) {
+                isRaised = true; 
+            } else if (leadSuit && hasLeadSuit && card.suit !== leadSuit) {
+                isDisabled = true; 
+            }
+
+            let classNames = `card ${card.red ? 'red' : ''}`;
+            if (isDisabled) classNames += ' disabled';
+            if (isRaised) classNames += ' raised';
+
+            cardEl.className = classNames;
+            cardEl.style.left = `${startLeftOffset + (index * offsetStep)}px`;
+            cardEl.style.zIndex = index + 1;
+            
+            cardEl.innerHTML = `
+                <div class="card-corner">${card.val}<span>${card.suit}</span></div>
+                <div class="card-center">${card.suit}</div>
+                <div class="card-corner-bottom">${card.val}<span>${card.suit}</span></div>
+            `;
+
+            if (!isDisabled) {
+                cardEl.onclick = () => selectCardToPlay(cardEl, card);
+            } else {
+                cardEl.onclick = () => showAlertModal(leadSuit);
+            }
+
+            container.appendChild(cardEl);
+        });
+    }
+
+    function openBiddingModal() {
+        if (isSpectator) return;
+        selectedBidCards = [];
+        document.getElementById('bidding-modal').classList.remove('hidden');
+        document.getElementById('btn-confirm-target').disabled = true;
+        document.getElementById('bid-calc-result').innerText = '-';
+        document.getElementById('bid-warning-msg').innerText = '';
+
+        const container = document.getElementById('bidding-cards-container');
+        container.innerHTML = '';
+        let totalCards = playerHand.length;
+        let totalWidthSpan = Math.min(270, totalCards * 22);
+        let startLeftOffset = (280 - totalWidthSpan) / 2;
+        let offsetStep = totalCards > 1 ? totalWidthSpan / (totalCards - 1) : 0;
+
+        playerHand.forEach((card, index) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card ${card.red ? 'red' : ''}`;
+            cardEl.style.left = `${startLeftOffset + (index * offsetStep)}px`;
+            cardEl.style.zIndex = index + 1;
+            
+            cardEl.innerHTML = `
+                <div class="card-corner">${card.val}<span>${card.suit}</span></div>
+                <div class="card-center">${card.suit}</div>
+                <div class="card-corner-bottom">${card.val}<span>${card.suit}</span></div>
+            `;
+            cardEl.onclick = () => toggleBidCard(cardEl, card);
+            container.appendChild(cardEl);
+        });
+    }
+
+    function toggleBidCard(element, card) {
+        if (element.classList.contains('selected')) {
+            element.classList.remove('selected');
+            selectedBidCards = selectedBidCards.filter(c => !(c.suit === card.suit && c.val === card.val));
+        } else {
+            if (selectedBidCards.length >= 2) return;
+            element.classList.add('selected');
+            selectedBidCards.push(card);
+        }
+
+        const confirmBtn = document.getElementById('btn-confirm-target');
+        const calcText = document.getElementById('bid-calc-result');
+        const warningText = document.getElementById('bid-warning-msg');
+
+        if (selectedBidCards.length >= 1) {
+            let target = parseCardValue(selectedBidCards[0].val);
+            if (selectedBidCards.length === 2) target += parseCardValue(selectedBidCards[1].val);
+            let isDiffSuit = selectedBidCards.length === 2 && selectedBidCards[0].suit !== selectedBidCards[1].suit;
+
+            if (isDiffSuit && target < 7) {
+                calcText.innerText = `Target: ${target} (No Truf Gagal)`;
+                warningText.innerText = "⚠️ Peringatan: No Truf minimal total bid harus 7!";
+                confirmBtn.disabled = true;
+            } else {
+                warningText.innerText = "";
+                let trumpDesc = isDiffSuit ? 'NO TRUF (sah)' : selectedBidCards[0].suit;
+                calcText.innerText = `Target: ${target} (Truf: ${trumpDesc})`;
+                confirmBtn.disabled = false;
+            }
+        } else {
+            calcText.innerText = '-';
+            warningText.innerText = '';
+            confirmBtn.disabled = true;
+        }
+    }
+
+    function parseCardValue(val) {
+        if (['J', 'Q', 'K'].includes(val)) return 0;
+        if (val === 'A') return 1;
+        return parseInt(val);
+    }
+
+    function confirmBiddingTarget() {
+        document.getElementById('bidding-modal').classList.add('hidden');
+        let myTarget = parseCardValue(selectedBidCards[0].val);
+        if (selectedBidCards.length === 2) myTarget += parseCardValue(selectedBidCards[1].val);
+
+        playerTargets['You'] = myTarget;
+        let myTopSuit = selectedBidCards[0].suit;
+        if (selectedBidCards.length === 2 && suitWeight[selectedBidCards[1].suit] > suitWeight[myTopSuit]) {
+            myTopSuit = selectedBidCards[1].suit;
+        }
+
+        playerBidDetails['You'] = {
+            target: myTarget, cardCount: selectedBidCards.length,
+            isDiffSuit: selectedBidCards.length === 2 && selectedBidCards[0].suit !== selectedBidCards[1].suit,
+            topSuit: myTopSuit
+        };
+
+        document.getElementById('my-target').innerText = myTarget;
+
+        [players[1], players[2], players[3]].forEach(bot => {
+            let bTarget = Math.floor(Math.random() * 4) + 1;
+            playerTargets[bot] = bTarget;
+            let botCardCount = Math.random() > 0.4 ? 2 : 1;
+            let suitsList = ['♦', '♣', '♥', '♠'];
+            let botSuit1 = suitsList[Math.floor(Math.random()*4)];
+            let botSuit2 = botCardCount === 2 ? suitsList[Math.floor(Math.random()*4)] : botSuit1;
+            let botTopSuit = botSuit1;
+            if (botCardCount === 2 && suitWeight[botSuit2] > suitWeight[botTopSuit]) botTopSuit = botSuit2;
+
+            playerBidDetails[bot] = {
+                target: bTarget, cardCount: botCardCount,
+                isDiffSuit: botCardCount === 2 && botSuit1 !== botSuit2 && bTarget >= 7,
+                topSuit: botTopSuit
+            };
+        });
+
+        let highestBidder = players[0];
+        let maxBidObj = playerBidDetails[highestBidder];
+
+        for (let i = 1; i < players.length; i++) {
+            let p = players[i];
+            let currentObj = playerBidDetails[p];
+            if (currentObj.target > maxBidObj.target) {
+                highestBidder = p; maxBidObj = currentObj;
+            } else if (currentObj.target === maxBidObj.target && suitWeight[currentObj.topSuit] > suitWeight[maxBidObj.topSuit]) {
+                highestBidder = p; maxBidObj = currentObj;
+            }
+        }
+
+        activeTrump = (maxBidObj.isDiffSuit && maxBidObj.target >= 7) ? null : maxBidObj.topSuit;
+        document.getElementById('trump-text').innerText = activeTrump ? `Truf: ${activeTrump}` : `Truf: NO TRUF`;
+
+        let sumBids = Object.values(playerTargets).reduce((a, b) => a + b, 0);
+        gameMode = sumBids >= 13 ? 'MAIN ATAS' : 'MAIN BAWAH';
+        document.getElementById('mode-text').innerText = `Mode: ${gameMode}`;
+
+        document.getElementById('t-b').innerText = playerTargets[players[1]] || 0;
+        document.getElementById('t-v').innerText = playerTargets[players[2]] || 0;
+        document.getElementById('t-h').innerText = playerTargets[players[3]] || 0;
+
+        currentTurnIndex = players.indexOf(highestBidder);
+        startTrick();
+    }
+
+    function startTrick() {
+        clearTableBoard();
+        renderHand();
+        processNextTurn();
+    }
+
+    function processNextTurn() {
+        if (currentTrickCards.length === 4) {
+            evaluateTrickWinner();
+            return;
+        }
+
+        let currentPlayer = players[currentTurnIndex];
+
+        if (currentPlayer === 'You') {
+            document.getElementById('status-msg').innerText = isSpectator ? `Giliran You (Spectator)...` : "Giliran Anda membuang kartu!";
+            renderHand();
+        } else {
+            document.getElementById('status-msg').innerText = `Giliran ${currentPlayer} membuang kartu...`;
+            setTimeout(() => botPlayCard(currentPlayer), 700);
+        }
+    }
+
+    function selectCardToPlay(element, card) {
+        if (isSpectator || players[currentTurnIndex] !== 'You') return;
+        document.querySelectorAll('#my-hand .card').forEach(c => c.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedPlayCard = { element, card };
+        document.getElementById('btn-confirm-play').classList.remove('hidden');
+    }
+
+    function confirmPlayCard() {
+        if (isSpectator || !selectedPlayCard || players[currentTurnIndex] !== 'You') return;
+
+        const { card } = selectedPlayCard;
+        let leadSuit = currentTrickCards.length > 0 ? currentTrickCards[0].card.suit : null;
+        let hasLeadSuit = leadSuit ? playerHand.some(c => c.suit === leadSuit) : false;
+
+        if (leadSuit && hasLeadSuit && card.suit !== leadSuit) {
+            showAlertModal(leadSuit);
+            return;
+        }
+
+        document.getElementById('btn-confirm-play').classList.add('hidden');
+        playerHand = playerHand.filter(c => !(c.suit === card.suit && c.val === card.val));
+        playerHands['You'] = playerHand;
+        selectedPlayCard = null;
+        renderHand();
+
+        let isTrump = activeTrump ? (card.suit === activeTrump) : false;
+        addCardToTable(card, 'You', isTrump);
+        currentTrickCards.push({ player: 'You', card, isBack: isTrump });
+
+        currentTurnIndex = (currentTurnIndex + 1) % 4;
+        processNextTurn();
+    }
+
+    function botPlayCard(botName) {
+        let hand = playerHands[botName] || [];
+        if (hand.length === 0) return;
+
+        let leadSuit = currentTrickCards.length > 0 ? currentTrickCards[0].card.suit : null;
+        let validCards = hand;
+        if (leadSuit) {
+            let sameSuitCards = hand.filter(c => c.suit === leadSuit);
+            if (sameSuitCards.length > 0) validCards = sameSuitCards;
+        }
+
+        let chosenCard = validCards[Math.floor(Math.random() * validCards.length)];
+        playerHands[botName] = hand.filter(c => !(c.suit === chosenCard.suit && c.val === chosenCard.val));
+
+        let isTrump = activeTrump ? (chosenCard.suit === activeTrump) : false;
+        addCardToTable(chosenCard, botName, isTrump);
+        currentTrickCards.push({ player: botName, card: chosenCard, isBack: isTrump });
+
+        currentTurnIndex = (currentTurnIndex + 1) % 4;
+        processNextTurn();
+    }
+
+    function evaluateTrickWinner() {
+        currentTrickCards.forEach(item => {
+            if (item.isBack) addCardToTable(item.card, item.player, false);
+        });
+
+        document.getElementById('status-msg').innerText = "Menghitung pemenang trik...";
+
+        setTimeout(() => {
+            let leadSuit = currentTrickCards[0].card.suit;
+            let winningPlay = currentTrickCards[0];
+
+            for (let i = 1; i < currentTrickCards.length; i++) {
+                let play = currentTrickCards[i];
+                let currBest = winningPlay.card;
+                let card = play.card;
+
+                if (activeTrump && card.suit === activeTrump && currBest.suit !== activeTrump) {
+                    winningPlay = play;
+                } else if (card.suit === currBest.suit || (!activeTrump && card.suit === leadSuit && currBest.suit === leadSuit)) {
+                    if (cardRank[card.val] > cardRank[currBest.val]) winningPlay = play;
+                }
+            }
+
+            let winner = winningPlay.player;
+            playerWins[winner] = (playerWins[winner] || 0) + 1;
+            updateWinCounters();
+
+            document.getElementById('status-msg').innerText = `Trik dimenangkan oleh ${winner}!`;
+            currentTurnIndex = players.indexOf(winner);
+
+            setTimeout(() => {
+                if (playerHand.length === 0) calculateRoundScores();
+                else startTrick();
+            }, 1800);
+        }, 1000);
+    }
+
+    function calculateRoundScores() {
+        players.forEach(p => {
+            let target = playerTargets[p] || 0;
+            let wins = playerWins[p] || 0;
+            let roundScore = 0;
+
+            if (target === 0) roundScore = (wins === 0) ? 10 : -5 + (- ((wins - 1) * 2));
+            else roundScore = (target === wins) ? target : -Math.abs(wins - target) * 2;
+            
+            playerTotalScores[p] = (playerTotalScores[p] || 0) + roundScore;
+        });
+
+        updateScoreDisplays();
+        let sortedPlayers = [...players].sort((a, b) => playerTotalScores[b] - playerTotalScores[a]);
+
+        let tableHTML = `<table class="score-table">
+            <thead>
+                <tr><th>Rank</th><th>Pemain</th><th>Tgt</th><th>Win</th><th>Skor</th></tr>
+            </thead>
+            <tbody>`;
+
+        sortedPlayers.forEach((p, idx) => {
+            tableHTML += `<tr ${idx === 0 ? 'class="winner-row"' : ''}>
+                <td>#${idx + 1}</td><td><b>${p}</b></td><td>${playerTargets[p] || 0}</td><td>${playerWins[p] || 0}</td><td><b>${playerTotalScores[p] || 0}</b></td>
+            </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+
+        document.getElementById('round-end-title').innerText = `REKAP RONDE ${currentRound}`;
+        document.getElementById('round-end-content').innerHTML = tableHTML;
+        document.getElementById('round-end-modal').classList.remove('hidden');
+    }
+
+    function proceedNextRoundOrFinish() {
+        document.getElementById('round-end-modal').classList.add('hidden');
+        if (currentRound < maxRounds) {
+            currentRound++;
+            startNewRound();
+        } else {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+        }
+    }
+
+    function openScoreModal() {
+        let sortedPlayers = [...players].sort((a, b) => playerTotalScores[b] - playerTotalScores[a]);
+        let tableHTML = `<table class="score-table">
+            <thead><tr><th>Rank</th><th>Pemain</th><th>Tgt</th><th>Win</th><th>Skor</th></tr></thead>
+            <tbody>`;
+        sortedPlayers.forEach((p, idx) => {
+            tableHTML += `<tr ${idx === 0 ? 'class="winner-row"' : ''}>
+                <td>#${idx + 1}</td><td><b>${p}</b></td><td>${playerTargets[p] || 0}</td><td>${playerWins[p] || 0}</td><td><b>${playerTotalScores[p] || 0}</b></td>
+            </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+
+        document.getElementById('score-list-content').innerHTML = tableHTML;
+        document.getElementById('score-modal').classList.remove('hidden');
+    }
+
+    function closeScoreModal() { document.getElementById('score-modal').classList.add('hidden'); }
+    function showAlertModal(suit) { document.getElementById('alert-modal-msg').innerText = `Wajib membuang kembang ${suit}!`; document.getElementById('alert-modal').classList.remove('hidden'); }
+    function closeAlertModal() { document.getElementById('alert-modal').classList.add('hidden'); }
+
+    function addCardToTable(card, owner, isBack = false) {
+        const slot = document.getElementById(`slot-${owner}`);
+        if (!slot) return;
+        if (isBack) {
+            slot.innerHTML = `<div class="card back" style="position:relative;"></div>`;
+        } else {
+            slot.innerHTML = `
+                <div class="card ${card.red ? 'red' : ''}" style="position:relative;">
+                    <div class="card-corner">${card.val}<span>${card.suit}</span></div>
+                    <div class="card-center">${card.suit}</div>
+                    <div class="card-corner-bottom">${card.val}<span>${card.suit}</span></div>
+                </div>
+            `;
+        }
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
